@@ -1,4 +1,5 @@
 import type { AccountTransactionResult } from '@/types';
+import { NoBudgetIcon } from '@/components/ui/NoBudgetIcon';
 
 interface Props {
   transactions: AccountTransactionResult[];
@@ -52,6 +53,9 @@ export function AccountTransactionListMobile({ transactions, categoryToGroup, on
                       </>
                     ) : (
                       <span className="text-base-content/30 italic">No category</span>
+                    )}
+                    {!t.affectsBudget && (
+                      <NoBudgetIcon className="inline-block align-middle ml-1.5 text-base-content/40" />
                     )}
                   </div>
                   {t.memo && (

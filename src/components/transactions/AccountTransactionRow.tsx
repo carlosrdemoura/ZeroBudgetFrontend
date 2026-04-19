@@ -1,4 +1,5 @@
 import type { AccountTransactionResult } from '@/types';
+import { NoBudgetIcon } from '@/components/ui/NoBudgetIcon';
 
 interface Props {
   transaction: AccountTransactionResult;
@@ -45,6 +46,9 @@ export function AccountTransactionRow({ transaction, groupName, onDelete, onEdit
           </>
         ) : (
           <span className="text-base-content/25 italic text-xs">—</span>
+        )}
+        {!transaction.affectsBudget && (
+          <NoBudgetIcon className="inline-block align-middle ml-1.5 text-base-content/40" />
         )}
       </td>
       <td className="py-2.5 px-2 text-sm text-base-content/80 truncate max-w-0">
