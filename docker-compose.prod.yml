@@ -1,0 +1,54 @@
+services:
+  web:
+    # Opção A (recomendada no Portainer): puxar imagem já publicada em um registry.
+    # Ajuste IMAGE_REF na aba "Environment variables" da stack do Portainer.
+    # Ex.: ghcr.io/seu-usuario/zerobudget-frontend:latest
+    image: ${IMAGE_REF:-zerobudget-frontend:latest}
+
+    # Opção B: buildar a partir do repositório Git (Portainer → Build method: Repository).
+    # Descomente o bloco abaixo e comente a linha `image:` acima caso prefira buildar.
+    # build:
+    #   context: .
+    #   dockerfile: Dockerfile
+    #   args:
+    #     NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL}
+
+    container_name: zerobudget-frontend
+    restart: unless-stopped
+
+    environment:
+      NODE_ENV: production
+      PORT: 3000
+      HOSTNAME: 0.0.0.0
+      NEXT_TELEMETRY_DISABLED: "1"
+
+    ports:
+      - "${HOST_PORT:-3000}:3000"
+
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://127.0.0.1:3000/"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 20s
+
+    deploy:
+      resources:
+        limits:
+          cpus: "1.0"
+          memory: 512M
+        reservations:
+          memory: 128M
+
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "5"
+
+    networks:
+      - web
+
+networks:
+  web:
+    driver: bridge
