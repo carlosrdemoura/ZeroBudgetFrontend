@@ -11,21 +11,29 @@ interface Props {
   onDeleted: () => void;
 }
 
-function fmt(n: number) {
-  return new Intl.NumberFormat('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(n);
+function fmtForInput(n: number) {
+  return n.toFixed(2).replace('.', ',');
+}
+
+function parseAmount(s: string): number {
+  const trimmed = s.trim();
+  const normalized = trimmed.includes(',')
+    ? trimmed.replace(/\./g, '').replace(',', '.')
+    : trimmed;
+  return parseFloat(normalized);
 }
 
 export function EditAccountModal({ account, month, onClose, onDeleted }: Props) {
   const qc = useQueryClient();
   const [name, setName] = useState(account.name);
-  const [balance, setBalance] = useState(fmt(account.balance));
+  const [balance, setBalance] = useState(fmtForInput(account.balance));
   const [saveError, setSaveError] = useState('');
   const [deleteError, setDeleteError] = useState('');
   const [confirmingDelete, setConfirmingDelete] = useState(false);
 
   // Check if account has any transactions
   const { data: txCheck } = useQuery({
-    queryKey: ['accountTransactions', account.id, '2000-01-01', '2099-12-31', '', 1],
+    queryKey: ['accountTransactionsExist', account.id],
     queryFn: () =>
       transactionsApi.getAccountTransactions({
         accountId: account.id,
@@ -40,18 +48,16 @@ export function EditAccountModal({ account, month, onClose, onDeleted }: Props) 
 
   const saveMutation = useMutation({
     mutationFn: async () => {
-      const newBalance = parseFloat(balance.replace(',', '.'));
-      const patch: { name?: string; currentBalance?: number } = {};
-      if (name.trim() !== account.name) patch.name = name.trim();
-      if (!isNaN(newBalance) && Math.abs(newBalance - account.balance) > 0.001) {
-        patch.currentBalance = newBalance;
-      }
-      if (Object.keys(patch).length === 0) return;
-      await accountsApi.updateAccount(account.id, patch);
+      const parsed = parseAmount(balance);
+      await accountsApi.updateAccount(account.id, {
+        name: name.trim(),
+        currentBalance: isNaN(parsed) ? account.balance : parsed,
+      });
     },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['accounts'] });
       qc.invalidateQueries({ queryKey: ['accountTransactions', account.id] });
+      qc.invalidateQueries({ queryKey: ['accountTransactionsExist', account.id] });
       qc.invalidateQueries({ queryKey: ['summary', month] });
       qc.invalidateQueries({ queryKey: ['balances', month] });
       onClose();

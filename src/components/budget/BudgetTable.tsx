@@ -47,6 +47,7 @@ export function BudgetTable({ month }: Props) {
   const [showAddGroup, setShowAddGroup] = useState(false);
   const [localGroups, setLocalGroupsState] = useState<CategoryGroupResult[]>([]);
   const localGroupsRef = useRef<CategoryGroupResult[]>([]);
+  const preDragSnapshotRef = useRef<CategoryGroupResult[]>([]);
   const [activeItem, setActiveItem] = useState<{ id: string; type: 'group' | 'category' } | null>(null);
 
   const setLocalGroups = (updater: CategoryGroupResult[] | ((p: CategoryGroupResult[]) => CategoryGroupResult[])) => {
@@ -175,23 +176,23 @@ export function BudgetTable({ month }: Props) {
   });
 
   const reorderGroupsMutation = useMutation({
-    mutationFn: (items: { groupId: string; sortOrder: number }[]) =>
+    mutationFn: ({ items }: { items: { groupId: string; sortOrder: number }[]; prev: CategoryGroupResult[] }) =>
       categoriesApi.reorderGroups(items),
-    onError: () => { if (groups) setLocalGroups(groups); },
+    onError: (_err, vars) => { setLocalGroups(vars.prev); },
     onSuccess: () => qc.invalidateQueries({ queryKey: ['groups'] }),
   });
 
   const reorderCategoriesMutation = useMutation({
-    mutationFn: ({ groupId, items }: { groupId: string; items: { categoryId: string; sortOrder: number }[] }) =>
+    mutationFn: ({ groupId, items }: { groupId: string; items: { categoryId: string; sortOrder: number }[]; prev: CategoryGroupResult[] }) =>
       categoriesApi.reorderCategories(groupId, items),
-    onError: () => { if (groups) setLocalGroups(groups); },
+    onError: (_err, vars) => { setLocalGroups(vars.prev); },
     onSuccess: () => qc.invalidateQueries({ queryKey: ['groups'] }),
   });
 
   const moveCategoryMutation = useMutation({
-    mutationFn: ({ groupId, categoryId, targetGroupId }: { groupId: string; categoryId: string; targetGroupId: string }) =>
+    mutationFn: ({ groupId, categoryId, targetGroupId }: { groupId: string; categoryId: string; targetGroupId: string; prev: CategoryGroupResult[] }) =>
       categoriesApi.moveCategory(groupId, categoryId, targetGroupId),
-    onError: () => { if (groups) setLocalGroups(groups); },
+    onError: (_err, vars) => { setLocalGroups(vars.prev); },
     onSuccess: () => qc.invalidateQueries({ queryKey: ['groups'] }),
   });
 
@@ -238,6 +239,7 @@ export function BudgetTable({ month }: Props) {
   };
 
   function onDragStart({ active }: DragStartEvent) {
+    preDragSnapshotRef.current = localGroupsRef.current;
     setActiveItem({ id: active.id as string, type: active.data.current?.type });
   }
 
@@ -276,12 +278,14 @@ export function BudgetTable({ month }: Props) {
     setActiveItem(null);
 
     if (!over) {
-      if (groups) setLocalGroups(groups);
+      setLocalGroups(preDragSnapshotRef.current);
       return;
     }
 
     const current = localGroupsRef.current;
     const type = active.data.current?.type;
+
+    const preDrag = preDragSnapshotRef.current;
 
     if (type === 'group') {
       let overGroupId = over.id as string;
@@ -294,7 +298,10 @@ export function BudgetTable({ month }: Props) {
 
       const newOrder = arrayMove(current, oldIdx, newIdx);
       setLocalGroups(newOrder);
-      reorderGroupsMutation.mutate(newOrder.map((g, i) => ({ groupId: g.id, sortOrder: i + 1 })));
+      reorderGroupsMutation.mutate({
+        items: newOrder.map((g, i) => ({ groupId: g.id, sortOrder: i + 1 })),
+        prev: preDrag,
+      });
 
     } else if (type === 'category') {
       const activeCatId = active.id as string;
@@ -307,6 +314,7 @@ export function BudgetTable({ month }: Props) {
           groupId: originalGroupId,
           categoryId: activeCatId,
           targetGroupId: currentGroup.id,
+          prev: preDrag,
         });
       } else {
         const overCatId = over.id as string;
@@ -322,6 +330,7 @@ export function BudgetTable({ month }: Props) {
         reorderCategoriesMutation.mutate({
           groupId: currentGroup.id,
           items: newCats.map((c, i) => ({ categoryId: c.id, sortOrder: i + 1 })),
+          prev: preDrag,
         });
       }
     }

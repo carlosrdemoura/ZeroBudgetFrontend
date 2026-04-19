@@ -1,5 +1,5 @@
-
 import { useCallback, useEffect, useState } from 'react';
+import { useQueryClient } from '@tanstack/react-query';
 import { authApi } from '@/lib/api/auth';
 
 interface AuthState {
@@ -9,6 +9,7 @@ interface AuthState {
 }
 
 export function useAuth() {
+  const qc = useQueryClient();
   const [state, setState] = useState<AuthState>({
     token: null,
     email: null,
@@ -16,6 +17,7 @@ export function useAuth() {
   });
 
   useEffect(() => {
+    if (typeof window === 'undefined') return;
     const token = localStorage.getItem('token');
     const email = localStorage.getItem('email');
     setState({ token, email, isLoading: false });
@@ -23,18 +25,26 @@ export function useAuth() {
 
   const login = useCallback(async (email: string, password: string) => {
     const result = await authApi.login(email, password);
-    localStorage.setItem('token', result.token);
-    localStorage.setItem('email', result.email);
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('token', result.token);
+      localStorage.setItem('email', result.email);
+    }
+    qc.clear();
     setState({ token: result.token, email: result.email, isLoading: false });
     return result;
-  }, []);
+  }, [qc]);
 
   const logout = useCallback(() => {
-    localStorage.removeItem('token');
-    localStorage.removeItem('email');
+    if (typeof window !== 'undefined') {
+      localStorage.removeItem('token');
+      localStorage.removeItem('email');
+    }
+    qc.clear();
     setState({ token: null, email: null, isLoading: false });
-    window.location.href = '/login';
-  }, []);
+    if (typeof window !== 'undefined') {
+      window.location.href = '/login';
+    }
+  }, [qc]);
 
   return { ...state, login, logout };
 }

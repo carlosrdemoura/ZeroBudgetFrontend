@@ -18,12 +18,21 @@ client.interceptors.request.use((config) => {
   return config;
 });
 
-// On 401, clear token and redirect to login
+// On 401, clear credentials and redirect to login — guarded against
+// concurrent 401s and avoiding a redirect loop when already on /login.
+let redirecting = false;
 client.interceptors.response.use(
   (res) => res,
   (error) => {
-    if (error.response?.status === 401 && typeof window !== 'undefined') {
+    if (
+      error.response?.status === 401 &&
+      typeof window !== 'undefined' &&
+      !redirecting &&
+      window.location.pathname !== '/login'
+    ) {
+      redirecting = true;
       localStorage.removeItem('token');
+      localStorage.removeItem('email');
       window.location.href = '/login';
     }
     return Promise.reject(error);
