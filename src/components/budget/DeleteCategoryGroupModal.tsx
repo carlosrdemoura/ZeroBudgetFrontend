@@ -1,7 +1,6 @@
 import { useMemo, useRef, useState } from 'react';
+import { INFLOW_CATEGORY_ID } from '@/lib/constants';
 import type { CategoryGroupResult } from '@/types';
-
-const INFLOW_CATEGORY_ID = '00000000-0000-0000-0000-000000000003';
 
 interface Props {
   group: CategoryGroupResult;

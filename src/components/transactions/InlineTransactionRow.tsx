@@ -1,8 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { categoriesApi } from '@/lib/api/categories';
-
-const INFLOW_CATEGORY_ID = '00000000-0000-0000-0000-000000000003';
+import { INFLOW_CATEGORY_ID } from '@/lib/constants';
 
 function todayISO(): string {
   const d = new Date();

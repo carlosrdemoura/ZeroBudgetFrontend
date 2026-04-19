@@ -8,7 +8,9 @@ interface Props {
 export function ErrorAlert({ error, className }: Props) {
   let message = 'An unexpected error occurred.';
 
-  if (error instanceof AxiosError) {
+  if (typeof error === 'string') {
+    message = error;
+  } else if (error instanceof AxiosError) {
     const data = error.response?.data as { title?: string; errors?: Record<string, string[]> };
     if (data?.errors) {
       const msgs = Object.values(data.errors).flat();

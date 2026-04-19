@@ -1,5 +1,5 @@
 import Link from 'next/link';
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { useRouter } from 'next/router';
 import { useQuery } from '@tanstack/react-query';
 import { accountsApi } from '@/lib/api/accounts';
@@ -49,7 +49,9 @@ function formatBalance(amount: number): string {
 export function Sidebar({ month, drawerId, onAddAccount, onEditAccount }: Props) {
   const { asPath } = useRouter();
   const isLg = useIsLg();
-  const [collapsedPref, setCollapsedPref] = useState(false);
+  const [collapsedPref, setCollapsedPref] = useState(
+    () => typeof window !== 'undefined' && localStorage.getItem('sidebar-collapsed') === 'true',
+  );
   const collapsed = isLg && collapsedPref;
 
   const { data: accounts = [] } = useQuery<AccountResult[]>({
@@ -57,11 +59,6 @@ export function Sidebar({ month, drawerId, onAddAccount, onEditAccount }: Props)
     queryFn: accountsApi.getAccounts,
     staleTime: 30_000,
   });
-
-  useEffect(() => {
-    const saved = localStorage.getItem('sidebar-collapsed');
-    if (saved === 'true') setCollapsedPref(true);
-  }, []);
 
   const toggleCollapsed = () => {
     const next = !collapsedPref;
