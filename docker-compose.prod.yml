@@ -1,18 +1,11 @@
 services:
   web:
-    # Opção A (recomendada no Portainer): puxar imagem já publicada em um registry.
-    # Ajuste IMAGE_REF na aba "Environment variables" da stack do Portainer.
-    # Ex.: ghcr.io/seu-usuario/zerobudget-frontend:latest
-    image: ${IMAGE_REF:-zerobudget-frontend:latest}
-
-    # Opção B: buildar a partir do repositório Git (Portainer → Build method: Repository).
-    # Descomente o bloco abaixo e comente a linha `image:` acima caso prefira buildar.
-    # build:
-    #   context: .
-    #   dockerfile: Dockerfile
-    #   args:
-    #     NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL}
-
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL}
+    image: zerobudget-frontend:latest
     container_name: zerobudget-frontend
     restart: unless-stopped
 
