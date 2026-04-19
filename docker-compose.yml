@@ -1,12 +1,11 @@
 services:
   web:
+    container_name: zerobudget-frontend
     build:
       context: .
       dockerfile: Dockerfile
       args:
         NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL}
-    image: zerobudget-frontend:latest
-    container_name: zerobudget-frontend
     ports:
       - "3000:3000"
     restart: unless-stopped
